@@ -3,6 +3,8 @@ from itertools import chain,combinations,permutations,islice
 
 rates = dict(json.loads(open("sample.json","r").read()))
 
+# print(rates)
+
 # from itertools doc recipies - https://docs.python.org/3.6/library/itertools.html
 def powerset(iterable):
     "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
@@ -26,12 +28,28 @@ def generate_routes(rates):
 def try_route(symbols:tuple,initialstake:float):
     print("recieved symbols",symbols)
     subtotal = initialstake
-    slice1 = islice(symbols,0,None,2)
-    slice2 = islice(symbols,1,None,2)
-    zipped = list(zip(slice1,slice2))
+    zipped = []
+    # start pairing tupples
+    for i in range(len(symbols)):
+        try:
+            pair = tuple((symbols[i],symbols[i+1],))
+            print("pair",pair)
+            zipped.append(pair)
+        except Exception as e:
+
+            print("end reached?",e)
+            continue
+
+
     print("zipped : ",zipped)
-    for symbol1,symbol2 in list(zip(slice1,slice2)):
-        subtotal = rates[symbol1][symbol2]
+    for symbol1,symbol2 in zipped:
+        print("symbol1",symbol1)
+        print("symbol2",symbol2)
+        rate = rates[str(symbol1)][0][str(symbol2)]
+        if rate == "N/A":
+            continue
+        print("rate",rate)
+        subtotal = rate / subtotal
     return subtotal
 
 def try_routes(startcurrency:tuple,endcurrency,initialstake:float):
