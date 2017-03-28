@@ -25,10 +25,11 @@ def generate_routes(rates):
 # print(generate_routes(rates))
 
 
-def try_route(symbols:tuple,initialstake:float):
+def try_route(symbols:tuple,initialstake:float,startcurrency:tuple=('GBP',)):
     print("recieved symbols",symbols)
     subtotal = initialstake
     zipped = []
+    symbols = symbols + startcurrency
     # start pairing tupples
     for i in range(len(symbols)):
         try:
@@ -49,7 +50,7 @@ def try_route(symbols:tuple,initialstake:float):
         if rate == "N/A":
             continue
         print("rate",rate)
-        subtotal = rate / subtotal
+        subtotal = subtotal * rate
     return subtotal
 
 def try_routes(startcurrency:tuple,endcurrency,initialstake:float):
@@ -58,10 +59,11 @@ def try_routes(startcurrency:tuple,endcurrency,initialstake:float):
         empty = ()
         if route == empty:
             pass
-        print(route)
-        if route[-1] == endcurrency and route[0] != startcurrency:
-            result = try_route(startcurrency + tuple(route),initialstake)
-            results[route] = result
+        newroute = tuple(startcurrency) + tuple(route)
+        print("newroute",newroute)
+        if newroute[-1] == endcurrency and newroute[0] == str(startcurrency[0]):
+            result = try_route(newroute,initialstake)
+            results[newroute] = result
     return results
 
 print(try_routes(('GBP',),'GBP',1.0))
