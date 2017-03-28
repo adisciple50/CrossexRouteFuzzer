@@ -51,6 +51,7 @@ def try_route(symbols:tuple,initialstake:float,startcurrency:tuple=('GBP',)):
             continue
         print("rate",rate)
         subtotal = subtotal * rate
+        print("Start Symbol", symbol1 , "End Symbol" , symbol2, "New Balance (currency is now end symbol)",subtotal)
     return subtotal
 
 def try_routes(startcurrency:tuple,endcurrency,initialstake:float):
