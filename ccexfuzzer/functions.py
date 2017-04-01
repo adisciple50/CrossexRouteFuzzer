@@ -25,6 +25,7 @@ def read_list_file(filepath):
 
 def write_list_to_file(list:list,filepath):
     with open(filepath, 'a+') as to_write:
+        list = map(lambda x: x + "\n", list)
         to_write.writelines(list)
     return True
 

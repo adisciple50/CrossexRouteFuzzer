@@ -1,5 +1,7 @@
 from ccexfuzzer.functions import *
 import json
+from RouteFinder import *
+import multiprocessing
 
 
 def run():
@@ -42,5 +44,4 @@ def resume_unfinished(unfinished:str='unfinished.list'):
 
 
 if __name__ == '__main__':
-    run()
-    resume_unfinished()
+    print(try_routes(('GBP',), 'GBP', 1.0,dict(json.loads(open('ccex.json','r').read()))))
