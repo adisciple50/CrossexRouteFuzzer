@@ -3,64 +3,79 @@ import requests
 import RouteFinder
 from json.decoder import JSONDecodeError
 from http.client import RemoteDisconnected
-from io import UnsupportedOperation
+from io import UnsupportedOperation,BufferedRandom
 import datetime
 
-# print available markets
-markets = requests.get("https://c-cex.com/t/api_pub.html?a=getmarkets").json()
-
-# print(markets)
-
+# begin print available markets
+# markets = requests.get("https://c-cex.com/t/api_pub.html?a=getmarkets").json()
 # end markets
 
-# establish base coins
-'''
-basecoins = []
-
-for instrement in markets['result']:
-    # print(instrement)
-    basecoins.append(instrement['BaseCurrency'])
-
-basecoins = set(basecoins)
-
-
-print("Detected Base Coins: ",basecoins)
-'''
-
-# begin update ccex-example.json
-
-exchangerates = {}
 
 # get coin names
-coinnames = requests.get('https://c-cex.com/t/coinnames.json').json()
-coinnames = set(dict(coinnames).keys())
 
-# begin exchange rate collation
-i = 1
-with open('blacklist.list','r+') as blacklist:
-    try:
-        blacklisted = blacklist.read().splitlines()
-    except UnsupportedOperation as UO:
-        blacklisted = []
-    for base in coinnames:
-        for pair in coinnames:
-            try:
-                if base == pair:
-                    exchangerate = 1.0
-                else:
-                    url = str("https://c-cex.com/t/" + str(base) + "-" + str(pair) + ".json")
-                    if url in blacklist:
-                        continue
-                    print(datetime.datetime.now(),i,'url is', url)
-                    i+=1
-                    exchangerate = requests.get(url).json()
-                    exchangerate = exchangerate['ticker']['buy']
-            except JSONDecodeError as ke:
-                exchangerate = 0.0
-                blacklist.write('\n'.join(url))
-            except RemoteDisconnected as  RD:
-                exchangerates = 0.0
-            exchangerates[str(base)] = [{str(pair):float(exchangerate)}]
+def get_coinnames(api_url:str='https://c-cex.com/t/coinnames.json'):
+    return set(dict(requests.get(api_url).json()).keys())
+
+# list file IO
+
+def read_list_file(filepath):
+    with open(filepath,'r') as to_read:
+        f = to_read.read().splitlines()
+    return list(f)
+
+def write_list_to_file(list:list,filepath):
+    with open(filepath, 'a+') as to_write:
+        to_write.writelines(list)
+    return True
+
+# generate urls to parse
+
+def generate_urls(coinsymbolset:set):
+    urls = []
+    for base in coinsymbolset:
+        for pair in coinsymbolset:
+            urls.append(url = str("https://c-cex.com/t/" + str(base) + "-" + str(pair) + ".json"))
+    return urls
+
+def apply_blacklist(list_to_filter:list):
+    blacklist = read_list_file('blacklist.list')
+    return  list(filter(lambda x: x in blacklist,list_to_filter))
+
+def apply_coin_equivelent_exchanges(coinsymbolset:set,exchangerates:dict): # ETH-ETH = 1 etc.
+    for base in coinsymbolset:
+        exchangerates[str(base)] = list({str(base):1.0}) + exchangerates[str(base)]
+    return exchangerates
+
+# fetch data,parse urls, sanitize data.
+
+def get_coin_buy_prices(api_urls:list):
+    i = 0
+    end = str(int(len(api_urls)))
+    exchangerates = {}
+    unfinished = [] # urls that werent attempted due to a remote server disconnect
+    blacklist = []
+    for url in api_urls:
+        try:
+            i += 1
+            print(datetime.datetime.now(), 'Progress ', i, '/' , end , 'url is', url)
+            exchangerate = requests.get(url).json()
+            base = url[str(url).rfind('/'):str(url).rfind('-')] # rfinds start from 0 quirk to the rescue!
+            exchangerate = exchangerate['ticker']['buy']
+        except JSONDecodeError:
+            exchangerate = 0.0
+            blacklist.append(url)
+        except RemoteDisconnected:
+            exchangerate = 0.0
+            unfinished.append(url)
+        finally:
+            exchangerates[str(base)] = [{str(url): float(exchangerate)}]
+    return {'exchangerates':exchangerates,'unfinished':unfinished,'blacklist':blacklist}
+
+def apply_coin_equivelent_exchanges(coinsymbolset:set,exchangerates:dict): # ETH-ETH = 1 etc.
+    for base in coinsymbolset:
+        exchangerates[str(base)] = list({str(base):1.0}) + exchangerates[str(base)]
+    return exchangerates
+
 
 # end exchange rate collation
 
