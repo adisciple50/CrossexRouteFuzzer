@@ -1,7 +1,8 @@
 import json
 from itertools import chain,combinations,permutations,islice
 
-rates = dict(json.loads(open("sample.json","r").read()))
+if __name__ == '__main__':
+    rates = dict(json.loads(open("sample.json","r").read()))
 
 # print(rates)
 
@@ -25,7 +26,7 @@ def generate_routes(rates):
 # print(generate_routes(rates))
 
 
-def try_route(symbols:tuple,initialstake:float,startcurrency:tuple=('GBP',)):
+def try_route(currentrates,symbols:tuple,initialstake:float,startcurrency:tuple=('GBP',)):
     print("recieved symbols",symbols)
     subtotal = initialstake
     zipped = []
@@ -46,7 +47,7 @@ def try_route(symbols:tuple,initialstake:float,startcurrency:tuple=('GBP',)):
     for symbol1,symbol2 in zipped:
         print("symbol1",symbol1)
         print("symbol2",symbol2)
-        rate = rates[str(symbol1)][0][str(symbol2)]
+        rate = currentrates[str(symbol1)][0][str(symbol2)]
         if rate == "N/A":
             continue
         print("rate",rate)
@@ -54,7 +55,7 @@ def try_route(symbols:tuple,initialstake:float,startcurrency:tuple=('GBP',)):
         print("Start Symbol", symbol1 , "End Symbol" , symbol2, "New Balance (currency is now end symbol)",subtotal)
     return subtotal
 
-def try_routes(startcurrency:tuple,endcurrency,initialstake:float):
+def try_routes(startcurrency:tuple,endcurrency,initialstake:float,rates):
     results = {}
     for route in generate_routes(rates):
         empty = ()
@@ -63,8 +64,10 @@ def try_routes(startcurrency:tuple,endcurrency,initialstake:float):
         newroute = tuple(startcurrency) + tuple(route)
         print("newroute",newroute)
         if newroute[-1] == endcurrency and newroute[0] == str(startcurrency[0]):
-            result = try_route(newroute,initialstake)
+            result = try_route(rates,newroute,initialstake,startcurrency=startcurrency)
             results[newroute] = result
     return results
 
-print(try_routes(('GBP',),'GBP',1.0))
+
+if __name__ == '__main__':
+    print(try_routes(('GBP',),'GBP',1.0))
