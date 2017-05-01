@@ -48,12 +48,13 @@ def apply_blacklist(list_to_filter:list,blacklist_filename:str='blacklist.list')
 # fetch data,parse urls, sanitize data.
 
 def get_coin_buy_prices(api_urls:list):
-    i = 0
+    # i = 0
     end = str(int(len(api_urls)))
     exchangerates = {}
     unfinished = [] # urls that werent attempted due to a remote server disconnect
     blacklist = []
-    for url in api_urls:
+    def add_coin_price(url):
+        i = 0
         base = url[str(url).rfind('/'):str(url).rfind('-')]  # rfinds start from 0 quirk to the rescue!
         try:
             i += 1
@@ -69,6 +70,8 @@ def get_coin_buy_prices(api_urls:list):
             unfinished.append(url)
         finally:
             exchangerates[str(base)] = [{str(url): float(exchangerate)}]
+    with Pool() as p:
+        p.map(add_coin_price,api_urls)
     return {'exchangerates':exchangerates,'unfinished':unfinished,'blacklist':blacklist}
 
 def apply_coin_equivelent_exchanges(coinsymbolset:set,exchangerates:dict): # ETH-ETH = 1 etc.
