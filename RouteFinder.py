@@ -1,5 +1,6 @@
 import json
 from itertools import chain,combinations,permutations,islice
+from multiprocessing import Pool
 
 if __name__ == '__main__':
     rates = dict(json.loads(open("sample.json","r").read()))
@@ -18,6 +19,12 @@ def generate_routes(rates):
     uniquecombos.pop(0)
     shuffleduniquecombos = []
     print(uniquecombos)
+    def shuffle_extender(unique_combos):
+        l = permutations(t, len(t))
+        # print(l)
+        shuffleduniquecombos.extend(l)
+    with Pool() as p:
+        p.map(shuffle_extender,uniquecombos)
     for t in uniquecombos:
         l = permutations(t,len(t))
         # print(l)
