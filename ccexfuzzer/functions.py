@@ -5,7 +5,8 @@ from json.decoder import JSONDecodeError
 from http.client import RemoteDisconnected
 # from io import UnsupportedOperation,BufferedRandom
 import datetime
-from multiprocessing import Pool
+from pathos.multiprocessing import ProcessingPool as Pool #  THE REAL MULTIPROCCESSING GOODNESS :D  - Thankyou Jesus!
+# import multiprocessing # IS RUBBISH!
 
 # begin print available markets
 # markets = requests.get("https://c-cex.com/t/api_pub.html?a=getmarkets").json()
@@ -34,11 +35,13 @@ def write_list_to_file(list:list,filepath):
 
 def generate_urls(coinsymbolset:set):
     urls = []
-    def make_url(coinsymbolset:set):
-        for pair in coinsymbolset:
-            urls.append(str("https://c-cex.com/t/" + str(base) + "-" + str(pair) + ".json"))
+    coinsymbollist = list(coinsymbolset)
+
+    def make_url(coinsymbolbase):  # parralalell proccessing equivelient of - for base in coinsymbollist
+        for pair in coinsymbollist:
+            urls.append(str("https://c-cex.com/t/" + str(coinsymbolbase) + "-" + str(pair) + ".json"))
     with Pool() as p:
-        p.map(make_url,list(coinsymbolset))
+        p.map(make_url,coinsymbollist)
     return urls
 
 def apply_blacklist(list_to_filter:list,blacklist_filename:str='blacklist.list'):

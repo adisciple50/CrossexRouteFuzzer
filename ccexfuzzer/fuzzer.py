@@ -44,4 +44,6 @@ def resume_unfinished(unfinished:str='unfinished.list'):
 
 
 if __name__ == '__main__':
-    print(try_routes(('GBP',), 'GBP', 1.0,dict(json.loads(open('ccex.json','r').read()))))
+    print(get_coinnames())
+    # run()
+    # print(try_routes(('GBP',), 'GBP', 1.0,dict(json.loads(open('ccex.json','r').read()))))

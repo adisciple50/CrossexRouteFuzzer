@@ -64,15 +64,18 @@ def try_route(currentrates,symbols:tuple,initialstake:float,startcurrency:tuple=
 
 def try_routes(startcurrency:tuple,endcurrency,initialstake:float,rates):
     results = {}
-    for route in generate_routes(rates):
+    routes = generate_routes(rates)
+    def crunch_route(route):
         empty = ()
         if route == empty:
             pass
         newroute = tuple(startcurrency) + tuple(route)
-        print("newroute",newroute)
+        print("newroute", newroute)
         if newroute[-1] == endcurrency and newroute[0] == str(startcurrency[0]):
-            result = try_route(rates,newroute,initialstake,startcurrency=startcurrency)
+            result = try_route(rates, newroute, initialstake, startcurrency=startcurrency)
             results[newroute] = result
+    with Pool as p:
+        p.map(crunch_route,routes)
     return results
 
 
