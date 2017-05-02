@@ -33,7 +33,6 @@ def write_list_to_file(list:list,filepath):
 
 # generate urls to parse
 
-# TODO being tricky.. sort generate_urls
 def generate_urls(coinsymbolset:set):
     urls = []
     coinsymbollist = list(coinsymbolset)
@@ -41,7 +40,7 @@ def generate_urls(coinsymbolset:set):
     def make_url(x):  # parralalell proccessing equivelient of - for base in coinsymbollist
         # print("proccess coinsybollist:",coinsymbollist)
         for pair in coinsymbollist:
-            return str("https://c-cex.com/t/" + str(x) + "-" + str(pair) + ".json")
+            return str("https://c-cex.com/t/" + str(x) + "-" + str(pair) + ".json")#url  with newline oper
 
     with Pool(None) as p:
         urls = p.map(make_url,coinsymbollist)
