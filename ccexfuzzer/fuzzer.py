@@ -7,13 +7,16 @@ import multiprocessing
 def run():
 
     urls = []
+    coin_names = set(get_coinnames())
 
     try:
         with open('urls.list', 'r'): # only checks if file exists
             urls = read_list_file('urls.list')
     except:
         with open('urls.list', 'w+') as urlslist:
-            urls = generate_urls(get_coinnames())
+            urls = generate_urls(coin_names)
+            print("coin_names:",coin_names)
+            print(urls)
             urlslist.writelines(urls)
 
 
@@ -44,6 +47,6 @@ def resume_unfinished(unfinished:str='unfinished.list'):
 
 
 if __name__ == '__main__':
-    print(get_coinnames())
-    # run()
+    # print(list(get_coinnames()))
+    run()
     # print(try_routes(('GBP',), 'GBP', 1.0,dict(json.loads(open('ccex.json','r').read()))))

@@ -33,15 +33,19 @@ def write_list_to_file(list:list,filepath):
 
 # generate urls to parse
 
+# TODO being tricky.. sort generate_urls
 def generate_urls(coinsymbolset:set):
     urls = []
     coinsymbollist = list(coinsymbolset)
 
-    def make_url(coinsymbolbase):  # parralalell proccessing equivelient of - for base in coinsymbollist
+    def make_url(x):  # parralalell proccessing equivelient of - for base in coinsymbollist
+        # print("proccess coinsybollist:",coinsymbollist)
         for pair in coinsymbollist:
-            urls.append(str("https://c-cex.com/t/" + str(coinsymbolbase) + "-" + str(pair) + ".json"))
-    with Pool() as p:
-        p.map(make_url,coinsymbollist)
+            return str("https://c-cex.com/t/" + str(x) + "-" + str(pair) + ".json")
+
+    with Pool(None) as p:
+        urls = p.map(make_url,coinsymbollist)
+        print("pool result",urls)
     return urls
 
 def apply_blacklist(list_to_filter:list,blacklist_filename:str='blacklist.list'):
