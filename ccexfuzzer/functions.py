@@ -59,6 +59,7 @@ def get_coin_buy_prices(api_urls:list):
     exchangerates = {}
     unfinished = [] # urls that werent attempted due to a remote server disconnect
     blacklist = []
+    # TODO - Work on a proper add_coin_price progress algo
     def add_coin_price(url):
         i = 0
         base = url[str(url).rfind('/'):str(url).rfind('-')]  # rfinds start from 0 quirk to the rescue!
