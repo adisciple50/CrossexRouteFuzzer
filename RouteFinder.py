@@ -75,7 +75,7 @@ def try_routes(startcurrency:tuple,endcurrency,initialstake:float,rates):
             result = try_route(rates, newroute, initialstake, startcurrency=startcurrency)
             results[newroute] = result
     with Pool as p:
-        p.map(crunch_route,routes)
+        results = p.map(crunch_route,routes)
     return results
 
 

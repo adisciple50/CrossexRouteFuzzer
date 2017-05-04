@@ -7,7 +7,9 @@ from http.client import RemoteDisconnected
 import datetime
 from pathos.multiprocessing import ProcessingPool as Pool #  THE REAL MULTIPROCCESSING GOODNESS :D  - Thankyou Jesus!
 # import multiprocessing # IS RUBBISH!
-
+from collections import ChainMap # requires python 3.3
+from itertools import chain
+from requests.packages.urllib3.exceptions import ProtocolError,ConnectionError
 # begin print available markets
 # markets = requests.get("https://c-cex.com/t/api_pub.html?a=getmarkets").json()
 # end markets
@@ -39,12 +41,15 @@ def generate_urls(coinsymbolset:set):
 
     def make_url(x):  # parralalell proccessing equivelient of - for base in coinsymbollist
         # print("proccess coinsybollist:",coinsymbollist)
+        proccess_urls = []
         for pair in coinsymbollist:
-            return str("https://c-cex.com/t/" + str(x) + "-" + str(pair) + ".json")#url  with newline oper
+            proccess_urls.append(str("https://c-cex.com/t/" + str(x) + "-" + str(pair) + ".json"))#url  with newline oper
+        return proccess_urls
 
     with Pool(None) as p:
         urls = p.map(make_url,coinsymbollist)
         print("pool result",urls)
+        urls = list(chain.from_iterable(urls))
     return urls
 
 def apply_blacklist(list_to_filter:list,blacklist_filename:str='blacklist.list'):
@@ -54,31 +59,66 @@ def apply_blacklist(list_to_filter:list,blacklist_filename:str='blacklist.list')
 # fetch data,parse urls, sanitize data.
 
 def get_coin_buy_prices(api_urls:list):
-    # i = 0
-    end = str(int(len(api_urls)))
     exchangerates = {}
     unfinished = [] # urls that werent attempted due to a remote server disconnect
     blacklist = []
     # TODO - Work on a proper add_coin_price progress algo
     def add_coin_price(url):
-        i = 0
-        base = url[str(url).rfind('/'):str(url).rfind('-')]  # rfinds start from 0 quirk to the rescue!
+        # i = 0
+        base = url[str(url).rfind('/')+1:str(url).rfind('-')]  # rfinds start from 0 quirk to the rescue!
         try:
-            i += 1
-            print(datetime.datetime.now(), 'Progress ', i, '/' , end , 'url is', url)
+            # i += 1
+            print(datetime.datetime.now(), 'Progress ','url is', url)
             exchangerate = requests.get(url).json()
 
             exchangerate = exchangerate['ticker']['buy']
         except JSONDecodeError:
             exchangerate = 0.0
-            blacklist.append(url)
-        except RemoteDisconnected:
+            return {'blacklist':url}
+        except (RemoteDisconnected,ProtocolError,ConnectionError):
             exchangerate = 0.0
-            unfinished.append(url)
+            return {'TODO':url}
         finally:
-            exchangerates[str(base)] = [{str(url): float(exchangerate)}]
+            return {str(base):[{str(url): float(exchangerate)}]}
+
+    with Pool() as p: # parse the urls for prices
+        results = p.map(add_coin_price,api_urls)
+        # exchangerates = dict(ChainMap(*results))# *results
+
+    # build the json file, by collating the "results" list of dicts into a json dict by key.
+    def collate_by_coin(dict_key):
+        flattened_dict = {dict_key:[]}
+        for result in results:
+            if result[dict_key]:
+                pair = str(result.values[0])[str(result.values[0]).rfind('-')+1:str(result.values[0]).rfind('.')-1] # get the crossex pair from a url.
+                flattened_dict[dict_key].append({pair:result.values()[1]})
+        return dict(flattened_dict)
+
+    def collate_by_unfinished(results):
+        for result in results:
+            if result['unfinished']:
+                return result['unfinished']
+
+    def collate_by_blacklist(results):
+        for result in results:
+            if result['blacklist']:
+                return result['blacklist']
+
+    # TODO - finish ccex.json
     with Pool() as p:
-        p.map(add_coin_price,api_urls)
+        coins = list(dict(ChainMap(*results)).keys())
+        exchangerateslist = p.map(collate_by_coin,coins)
+        for exchangeratedict in exchangerateslist:
+            exchangerates.update(exchangeratedict)
+
+    #   TODO - Collate by 'unfinshed' key.
+    with Pool() as p:
+        unfinished = p.map(collate_by_unfinished,results)
+    #   TODO - Collate by 'blacklist' key.
+    #   def
+    with Pool() as p:
+        blacklist = p.map(collate_by_blacklist,results)
+
     return {'exchangerates':exchangerates,'unfinished':unfinished,'blacklist':blacklist}
 
 def apply_coin_equivelent_exchanges(coinsymbolset:set,exchangerates:dict): # ETH-ETH = 1 etc.

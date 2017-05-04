@@ -8,6 +8,7 @@ def run():
 
     urls = []
     coin_names = set(get_coinnames())
+    print("Coins Available" ,coin_names)
 
     # generate a list of endpoint urls to parse
     try:
@@ -20,19 +21,21 @@ def run():
         write_list_to_file(urls,'urls.list')
 
 
-        try:
-            with open('blacklist.list','r'):
-                urls = apply_blacklist(urls)
-        except Exception as e:
-            with open('blacklist.list', 'x'):
-                pass
+    try:
+        with open('blacklist.list','r'):
+            urls = apply_blacklist(urls)
+    except Exception as e:
+        with open('blacklist.list', 'x'):
+            pass
 
-        results = get_coin_buy_prices(urls)
+    results = get_coin_buy_prices(urls)
+    print(results)
 
-        with open('ccex.json','w') as ccexjson:
-            ccexjson.writelines(json.dumps(results['exchangerates']))
-        write_list_to_file(results['blacklist'],'blacklist.list')
-        write_list_to_file(results['unfinished'],'unfinished.list') # writes urls that werent able to return data, because the server disconnected before the run.
+    with open('ccex.json','w') as ccexjson:
+        ccexjson.writelines(json.dumps(results['exchangerates']))
+    write_list_to_file(results['blacklist'],'blacklist.list')
+    write_list_to_file(results['unfinished'],'unfinished.list') # writes urls that werent able to return data, because the server disconnected before the run.
+
 
 
 def resume_unfinished(unfinished:str='unfinished.list'):
