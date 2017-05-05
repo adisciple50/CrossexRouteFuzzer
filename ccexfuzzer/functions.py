@@ -59,6 +59,7 @@ def apply_blacklist(list_to_filter:list,blacklist_filename:str='blacklist.list')
 # fetch data,parse urls, sanitize data.
 
 def get_coin_buy_prices(api_urls:list):
+    coins = list(get_coinnames()) # list changes infrequently, but may occasioonallly cause problems
     exchangerates = {}
     unfinished = [] # urls that werent attempted due to a remote server disconnect
     blacklist = []
@@ -75,9 +76,27 @@ def get_coin_buy_prices(api_urls:list):
         except JSONDecodeError:
             exchangerate = 0.0
             return {'blacklist':url}
-        except (RemoteDisconnected,ProtocolError,ConnectionError):
-            exchangerate = 0.0
-            return {'TODO':url}
+        except (RemoteDisconnected,ProtocolError,ConnectionError): # error cascade below! argh!
+            # possible subexceptions go here.
+            try:
+                exchangerate = 0.0
+                return {'TODO':url}
+            except ProtocolError:
+                try:
+                    exchangerate = 0.0
+                    return {'TODO': url}
+                except ConnectionError:
+                    try:
+                        exchangerate = 0.0
+                        return {'TODO': url}
+                    except:
+                        try:
+                            exchangerate = 0.0
+                            return {'TODO': url}
+                        except Exception as e:
+                            exchangerate = 0.0
+                            return {'TODO': url}
+
         finally:
             return {str(base):[{str(url): float(exchangerate)}]}
 
@@ -85,19 +104,24 @@ def get_coin_buy_prices(api_urls:list):
         results = p.map(add_coin_price,api_urls)
         # exchangerates = dict(ChainMap(*results))# *results
 
+    print(results)
+
     # build the json file, by collating the "results" list of dicts into a json dict by key.
     def collate_by_coin(dict_key):
         flattened_dict = {dict_key:[]}
         for result in results:
-            if result[dict_key]:
-                pair = str(result.values[0])[str(result.values[0]).rfind('-')+1:str(result.values[0]).rfind('.')-1] # get the crossex pair from a url.
-                flattened_dict[dict_key].append({pair:result.values()[1]})
+            try:
+                if result[dict_key]:
+                    pair = str(result.values[0])[str(result.values[0]).rfind('-')+1:str(result.values[0]).rfind('.')-1] # get the crossex pair from a url.
+                    flattened_dict[dict_key].append({pair:result.values()[1]})
+            except Exception as e: # key error .. continue to next iteration
+                continue
         return dict(flattened_dict)
 
     def collate_by_unfinished(results):
         for result in results:
-            if result['unfinished']:
-                return result['unfinished']
+            if result['TODO']:
+                return result['TODO']
 
     def collate_by_blacklist(results):
         for result in results:
@@ -106,7 +130,7 @@ def get_coin_buy_prices(api_urls:list):
 
     # TODO - finish ccex.json
     with Pool() as p:
-        coins = list(dict(ChainMap(*results)).keys())
+        # coins = list(dict(ChainMap(*results)).keys())
         exchangerateslist = p.map(collate_by_coin,coins)
         for exchangeratedict in exchangerateslist:
             exchangerates.update(exchangeratedict)
