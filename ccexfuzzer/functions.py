@@ -70,9 +70,12 @@ def get_coin_buy_prices(api_urls:list):
         try:
             # i += 1
             print(datetime.datetime.now(), 'Progress ','url is', url)
-            exchangerate = requests.get(url).json()
-
-            exchangerate = exchangerate['ticker']['buy']
+            cachepath = 'cache/' + url[url.rfind('/')+1:]
+            with open(cachepath) as cache:
+                print('Using Cache',cachepath)
+                exchangerate = cache.read().decode() if cache.readable() else requests.get(url).json()
+                exchangerate = exchangerate['ticker']['buy']
+                print('Base Is',base,'Exchangerate is',exchangerate)
         except JSONDecodeError:
             exchangerate = 0.0
             return {'blacklist':url}
@@ -120,8 +123,14 @@ def get_coin_buy_prices(api_urls:list):
 
     def collate_by_unfinished(results):
         for result in results:
-            if result['TODO']:
-                return result['TODO']
+            try:
+                if result['TODO']:
+                    return result['TODO']
+            except Exception as e:
+                print('result is',result)
+                print(e.with_traceback())
+
+
 
     def collate_by_blacklist(results):
         for result in results:

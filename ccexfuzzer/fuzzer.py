@@ -2,10 +2,23 @@ from ccexfuzzer.functions import *
 import json
 from RouteFinder import *
 import multiprocessing
+from urllib import request
+import urllib
+import requests
+from json.decoder import JSONDecodeError
 
+
+def cache_url(url:str):
+    path = 'cache/' + url[url.rfind('/'):]
+    with open(path,'w+') as f:
+        try:
+            f.write(requests.get(url).json)
+            # TODO - Continue Here
+        n
+        except JSONDecodeError:
+            pass
 
 def run():
-
     urls = []
     coin_names = set(get_coinnames())
     print("Coins Available" ,coin_names)
@@ -20,6 +33,9 @@ def run():
         print(urls)
         write_list_to_file(urls,'urls.list')
 
+    # cache results first . to stop race conditions.
+    cacher = multiprocessing.Pool()
+    cacher.map(cache_url,urls)
 
     try:
         with open('blacklist.list','r'):
