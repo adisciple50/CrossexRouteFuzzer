@@ -6,22 +6,28 @@ from urllib import request
 import urllib
 import requests
 from json.decoder import JSONDecodeError
+import os
 
 
 def cache_url(url:str):
-    path = 'cache/' + url[url.rfind('/'):]
+    path = 'cache' + url[url.rfind('/'):]
+    # https://stackoverflow.com/questions/273192/how-can-i-create-a-directory-if-it-does-not-exist#273227 - not reinventing the wheel here
+    if not os.path.exists('cache'):
+        os.makedirs('cache')
+    else:
+        pass
+
     with open(path,'w+') as f:
         try:
-            f.write(requests.get(url).json)
+            f.write(requests.get(url).text)
             # TODO - Continue Here
-        n
-        except JSONDecodeError:
+        except JSONDecodeError as e:
             pass
 
 def run():
     urls = []
     coin_names = set(get_coinnames())
-    print("Coins Available" ,coin_names)
+    print("Coins Available",coin_names)
 
     # generate a list of endpoint urls to parse
     try:
@@ -29,7 +35,8 @@ def run():
             urls = read_list_file('urls.list')
     except:
         print("coin_names:",coin_names)
-        urls = generate_urls(coin_names)
+        # urls = generate_urls_bruteforce(coin_names) # deprecated function
+        urls = get_urls()
         print(urls)
         write_list_to_file(urls,'urls.list')
 
@@ -41,8 +48,8 @@ def run():
         with open('blacklist.list','r'):
             urls = apply_blacklist(urls)
     except Exception as e:
-        with open('blacklist.list', 'x'):
-            pass
+        print('blacklist.list - file not found. contininuing')
+        pass
 
     results = get_coin_buy_prices(urls)
     print(results)

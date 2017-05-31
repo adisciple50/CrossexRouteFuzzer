@@ -1,6 +1,7 @@
 # import json
 import requests
 # import RouteFinder
+import json
 from json.decoder import JSONDecodeError
 from http.client import RemoteDisconnected
 # from io import UnsupportedOperation,BufferedRandom
@@ -35,7 +36,17 @@ def write_list_to_file(list:list,filepath):
 
 # generate urls to parse
 
-def generate_urls(coinsymbolset:set):
+def get_urls():
+    urls = []
+    def make_url(pair):
+        return str("https://c-cex.com/t/" + str(pair) + ".json")
+    pairs = requests.get("https://c-cex.com/t/pairs.json").json()["pairs"]
+    with Pool() as p:
+        urls = p.map(make_url,pairs)
+        return list(urls)
+
+
+def generate_urls_bruteforce(coinsymbolset:set): # deprecated - generates 40k pairs! (last checked) most of them invalid!
     urls = []
     coinsymbollist = list(coinsymbolset)
 
@@ -63,8 +74,10 @@ def get_coin_buy_prices(api_urls:list):
     exchangerates = {}
     unfinished = [] # urls that werent attempted due to a remote server disconnect
     blacklist = []
+    results = ''
     # TODO - Work on a proper add_coin_price progress algo
     def add_coin_price(url):
+        exchangerate = '' #declared up a scope!
         # i = 0
         base = url[str(url).rfind('/')+1:str(url).rfind('-')]  # rfinds start from 0 quirk to the rescue!
         try:
@@ -73,7 +86,12 @@ def get_coin_buy_prices(api_urls:list):
             cachepath = 'cache/' + url[url.rfind('/')+1:]
             with open(cachepath) as cache:
                 print('Using Cache',cachepath)
-                exchangerate = cache.read().decode() if cache.readable() else requests.get(url).json()
+                try:
+                    exchangerate = json.loads(cache.read().decode())
+                except AttributeError as isstr:
+                    exchangerate = json.loads(cache.read())
+
+                # exchangerate = json.loads(cache.read() if type(cache.read()) == str() else cache.read().decode() ) if cache.readable() else requests.get(url).json()
                 exchangerate = exchangerate['ticker']['buy']
                 print('Base Is',base,'Exchangerate is',exchangerate)
         except JSONDecodeError:
