@@ -40,7 +40,7 @@ def read_list_file(filepath):
 
 def write_list_to_file(list:list,filepath):
     with open(filepath, 'a+') as to_write:
-        list = map(lambda x: x + "\n", list)
+        list = map(lambda x: x + "\n" if x else '', list) # only write lines that exist
         to_write.writelines(list)
     return True
 
@@ -157,15 +157,20 @@ def get_coin_buy_prices(api_urls:list):
                 print(result)
                 return result['TODO']
         except Exception as e:
-            print('result is',result)
+            print('unfinished result is',result)
             print(e.with_traceback())
 
 
 
-    def collate_by_blacklist(results):
-        for result in results:
-            if result['blacklist']:
+    def collate_by_blacklist(result:dict):
+        try:
+            # print('Unfinished Run Is',result) # uncomment for debug
+            if 'blacklist' in result:
+                print(result)
                 return result['blacklist']
+        except Exception as e:
+            print('blacklist result is',result)
+            print(e.with_traceback())
 
     # TODO - finish ccex.json
     with Pool() as p:
@@ -174,10 +179,10 @@ def get_coin_buy_prices(api_urls:list):
         for exchangeratedict in exchangerateslist:
             exchangerates.update(exchangeratedict)
 
-    #   TODO - Collate by 'unfinshed' key.
+    # Collate By Unfinished
     with Pool() as p:
         unfinished = p.map(collate_by_unfinished,results)
-    #   TODO - Collate by 'blacklist' key.
+
     #   def
     with Pool() as p:
         blacklist = p.map(collate_by_blacklist,results)
