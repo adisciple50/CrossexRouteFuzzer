@@ -7,22 +7,10 @@ import urllib
 import requests
 from json.decoder import JSONDecodeError
 import os
+import cfscrape
 
 
-def cache_url(url:str):
-    path = 'cache' + url[url.rfind('/'):]
-    # https://stackoverflow.com/questions/273192/how-can-i-create-a-directory-if-it-does-not-exist#273227 - not reinventing the wheel here
-    if not os.path.exists('cache'):
-        os.makedirs('cache')
-    else:
-        pass
 
-    with open(path,'w+') as f:
-        try:
-            f.write(requests.get(url).text)
-            # TODO - Continue Here
-        except JSONDecodeError as e:
-            pass
 
 def run():
     urls = []

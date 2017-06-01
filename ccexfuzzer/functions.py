@@ -1,4 +1,6 @@
 # import json
+import os
+
 import requests
 # import RouteFinder
 import json
@@ -12,14 +14,22 @@ from collections import ChainMap # requires python 3.3
 from itertools import chain
 from requests.packages.urllib3.exceptions import ProtocolError,ConnectionError
 # begin print available markets
-# markets = requests.get("https://c-cex.com/t/api_pub.html?a=getmarkets").json()
+# markets = scraper.get("https://c-cex.com/t/api_pub.html?a=getmarkets").json()
 # end markets
+import cfscrape
 
+scraper = cfscrape.create_scraper() # returns a requests.Session object
 
 # get coin names
 
 def get_coinnames(api_url:str='https://c-cex.com/t/coinnames.json'):
-    return set(dict(requests.get(api_url).json()).keys())
+    # response = scraper.get(api_url).json()
+    response = scraper.get(api_url)
+    try:
+        return set(dict(response.json()).keys())
+    except:
+        print(response.text)
+
 
 # list file IO
 
@@ -40,7 +50,7 @@ def get_urls():
     urls = []
     def make_url(pair):
         return str("https://c-cex.com/t/" + str(pair) + ".json")
-    pairs = requests.get("https://c-cex.com/t/pairs.json").json()["pairs"]
+    pairs = scraper.get("https://c-cex.com/t/pairs.json").json()["pairs"]
     with Pool() as p:
         urls = p.map(make_url,pairs)
         return list(urls)
@@ -91,12 +101,13 @@ def get_coin_buy_prices(api_urls:list):
                 except AttributeError as isstr:
                     exchangerate = json.loads(cache.read())
 
-                # exchangerate = json.loads(cache.read() if type(cache.read()) == str() else cache.read().decode() ) if cache.readable() else requests.get(url).json()
+                # exchangerate = json.loads(cache.read() if type(cache.read()) == str() else cache.read().decode() ) if cache.readable() else scraper.get(url).json()
                 exchangerate = exchangerate['ticker']['buy']
                 print('Base Is',base,'Exchangerate is',exchangerate)
         except JSONDecodeError:
             exchangerate = 0.0
             return {'blacklist':url}
+        """
         except (RemoteDisconnected,ProtocolError,ConnectionError): # error cascade below! argh!
             # possible subexceptions go here.
             try:
@@ -117,9 +128,9 @@ def get_coin_buy_prices(api_urls:list):
                         except Exception as e:
                             exchangerate = 0.0
                             return {'TODO': url}
+        """
 
-        finally:
-            return {str(base):[{str(url): float(exchangerate)}]}
+        return {str(base):[{str(url): float(exchangerate)}]}
 
     with Pool() as p: # parse the urls for prices
         results = p.map(add_coin_price,api_urls)
@@ -171,6 +182,21 @@ def get_coin_buy_prices(api_urls:list):
         blacklist = p.map(collate_by_blacklist,results)
 
     return {'exchangerates':exchangerates,'unfinished':unfinished,'blacklist':blacklist}
+
+def cache_url(url:str):
+    path = 'cache' + url[url.rfind('/'):]
+    # https://stackoverflow.com/questions/273192/how-can-i-create-a-directory-if-it-does-not-exist#273227 - not reinventing the wheel here
+    if not os.path.exists('cache'):
+        os.makedirs('cache')
+    else:
+        pass
+
+    with open(path,'w+') as f:
+        try:
+            f.write(scraper.get(url).text)
+            # TODO - Continue Here
+        except JSONDecodeError as e:
+            pass
 
 def apply_coin_equivelent_exchanges(coinsymbolset:set,exchangerates:dict): # ETH-ETH = 1 etc.
     for base in coinsymbolset:
