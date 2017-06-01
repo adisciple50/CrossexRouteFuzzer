@@ -49,8 +49,8 @@ def write_list_to_file(list:list,filepath):
 def get_urls():
     urls = []
     def make_url(pair):
-        return str("https://c-cex.com/t/" + str(pair) + ".json")
-    pairs = scraper.get("https://c-cex.com/t/pairs.json").json()["pairs"]
+        return str("http://c-cex.com/t/" + str(pair) + ".json")
+    pairs = scraper.get("http://c-cex.com/t/pairs.json").json()["pairs"]
     with Pool() as p:
         urls = p.map(make_url,pairs)
         return list(urls)
@@ -64,7 +64,7 @@ def generate_urls_bruteforce(coinsymbolset:set): # deprecated - generates 40k pa
         # print("proccess coinsybollist:",coinsymbollist)
         proccess_urls = []
         for pair in coinsymbollist:
-            proccess_urls.append(str("https://c-cex.com/t/" + str(x) + "-" + str(pair) + ".json"))#url  with newline oper
+            proccess_urls.append(str("http://c-cex.com/t/" + str(x) + "-" + str(pair) + ".json"))#url  with newline oper
         return proccess_urls
 
     with Pool(None) as p:
@@ -84,7 +84,7 @@ def get_coin_buy_prices(api_urls:list):
     exchangerates = {}
     unfinished = [] # urls that werent attempted due to a remote server disconnect
     blacklist = []
-    results = ''
+    results = []
     # TODO - Work on a proper add_coin_price progress algo
     def add_coin_price(url):
         exchangerate = '' #declared up a scope!
@@ -150,14 +150,15 @@ def get_coin_buy_prices(api_urls:list):
                 continue
         return dict(flattened_dict)
 
-    def collate_by_unfinished(results):
-        for result in results:
-            try:
-                if result['TODO']:
-                    return result['TODO']
-            except Exception as e:
-                print('result is',result)
-                print(e.with_traceback())
+    def collate_by_unfinished(result:dict):
+        try:
+            # print('Unfinished Run Is',result) # uncomment for debug
+            if 'TODO' in result:
+                print(result)
+                return result['TODO']
+        except Exception as e:
+            print('result is',result)
+            print(e.with_traceback())
 
 
 
